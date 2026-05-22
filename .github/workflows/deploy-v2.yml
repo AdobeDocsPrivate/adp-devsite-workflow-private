@@ -474,7 +474,7 @@ jobs:
           echo "build_output_dir=${BUILD_OUTPUT_DIR}" >> $GITHUB_OUTPUT
           echo "✓ Build output directory: ${BUILD_OUTPUT_DIR}"
           echo "✓ Build verification passed"
- 
+
       - name: Deploy to Azure
         uses: AdobeDocs/static-website-deploy@master
         with:
@@ -494,13 +494,13 @@ jobs:
           echo "PURGING FASTLY CACHE"
           echo "================================================"
           echo "URL: ${{ needs.set-state.outputs.deploy_prod == 'true' && secrets.AIO_FASTLY_PROD_URL || secrets.AIO_FASTLY_DEV_URL }}${{ needs.set-state.outputs.path_prefix }}"
-          
+
       - name: Purge cache
-        uses: AdobeDocs/gatsby-fastly-purge-action@master
+        uses: AdobeDocs/adp-devsite-fastly-purge@main
         with:
           fastly-token: ${{ secrets.AIO_FASTLY_TOKEN }}
           fastly-url: "${{ needs.set-state.outputs.deploy_prod == 'true' && secrets.AIO_FASTLY_PROD_URL || secrets.AIO_FASTLY_DEV_URL }}${{ needs.set-state.outputs.path_prefix }}"
-      
+
       - name: Cache purge complete
         run: |
           echo "✓ Fastly cache purged successfully"
