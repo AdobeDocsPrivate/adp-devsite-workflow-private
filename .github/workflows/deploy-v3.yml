@@ -50,7 +50,9 @@ jobs:
           echo "Environment: $ENV_NAME"
 
           # Load the JSON data
-          matrix=$(jq --arg org "$REPO_OWNER" --arg env "$ENV_NAME" '[.[] | select(.org == $org and .env == $env)]' _workflow-config/.github/matrix/runner_matrix.json)
+          # Match rows whose .env is a substring of the requested env, so a combined
+          # value (e.g. "stg & prod") selects BOTH rows -> parallel stg + prod deploy.
+          matrix=$(jq --arg org "$REPO_OWNER" --arg env "$ENV_NAME" '[.[] | select(.org == $org and (.env as $e | $env | contains($e)))]' _workflow-config/.github/matrix/runner_matrix.json)
 
           # Set the formatted matrix as an output
           echo "matrix={\"include\":$(echo $matrix)}" >> $GITHUB_OUTPUT
@@ -63,8 +65,9 @@ jobs:
     strategy:
       matrix: ${{fromJson(needs.matrix_prep.outputs.matrix)}}
     outputs:
-      deploy_prod: ${{ contains(inputs.env, 'prod') }}
-      deploy_stg: ${{ contains(inputs.env, 'stg') }}
+      # NOTE: per-env flags are derived from matrix.env in each job below, not here.
+      # In a multi-row matrix (stg + prod) job outputs keep only the last row's value,
+      # so path_prefix / branch_short_ref are the only env-independent outputs we expose.
       path_prefix: ${{ steps.get_path_prefix.outputs.path_prefix }}
       branch_short_ref: ${{ steps.get_branch.outputs.branch }}
 
@@ -98,8 +101,8 @@ jobs:
     steps:
       - name: Echo state
         env:
-          DEPLOY_STG: ${{ needs.set-state.outputs.deploy_stg }}
-          DEPLOY_PROD: ${{ needs.set-state.outputs.deploy_prod }}
+          DEPLOY_STG: ${{ matrix.env == 'stg' }}
+          DEPLOY_PROD: ${{ matrix.env == 'prod' }}
           REPO_ORG: ${{ github.event.repository.owner.login }}
           REPO_NAME: ${{ github.event.repository.name }}
           BRANCH_SHORT_REF: ${{ needs.set-state.outputs.branch_short_ref }}
@@ -123,7 +126,7 @@ jobs:
 
     steps:
       - name: Check stage Private Azure connection string
-        if: needs.set-state.outputs.deploy_stg == 'true' && env.AIO_AZURE_DEV_PRIVATE_CONNECTION_STRING == null
+        if: matrix.env == 'stg' && env.AIO_AZURE_DEV_PRIVATE_CONNECTION_STRING == null
         run: |
           echo "::error::Please set the Azure Blob Storage connection string as AIO_AZURE_DEV_PRIVATE_CONNECTION_STRING in Github Secrets"
           exit 1
@@ -131,7 +134,7 @@ jobs:
           AIO_AZURE_DEV_PRIVATE_CONNECTION_STRING: ${{ secrets.AIO_AZURE_DEV_PRIVATE_CONNECTION_STRING }}
 
       - name: Check prod Private Azure connection string
-        if: needs.set-state.outputs.deploy_prod == 'true' && env.AIO_AZURE_PROD_PRIVATE_CONNECTION_STRING == null
+        if: matrix.env == 'prod' && env.AIO_AZURE_PROD_PRIVATE_CONNECTION_STRING == null
         run: |
           echo "::error::Please set the Azure Blob Storage connection string as AIO_AZURE_PROD_PRIVATE_CONNECTION_STRING in Github Secrets"
           exit 1
@@ -161,7 +164,7 @@ jobs:
             console.log('SELECTING AZURE CONNECTION STRING');
             console.log('================================================');
 
-            const isProd = '${{ inputs.env }}' === 'prod';
+            const isProd = '${{ matrix.env }}' === 'prod';
             console.log(`Environment: ${isProd ? 'Production' : 'Staging'}`);
 
             const connectionString = isProd
@@ -221,7 +224,7 @@ jobs:
       - name: Start development servers
         env:
           DEVSITE_CONNECTOR_FLAG: 'true'
-          DEVSITE_CONNECTOR_PUBLIC_ORIGIN: ${{ needs.set-state.outputs.deploy_prod == 'true' && 'https://developer.adobe.com' || 'https://developer-stage.adobe.com' }}
+          DEVSITE_CONNECTOR_PUBLIC_ORIGIN: ${{ matrix.env == 'prod' && 'https://developer.adobe.com' || 'https://developer-stage.adobe.com' }}
         run: |
           ROOT_DIR=$(pwd)
           
@@ -507,7 +510,7 @@ jobs:
 
       - name: Purge Fastly Cache
         env:
-          FASTLY_URL: ${{ needs.set-state.outputs.deploy_prod == 'true' && secrets.AIO_FASTLY_PROD_URL || secrets.AIO_FASTLY_DEV_URL }}
+          FASTLY_URL: ${{ matrix.env == 'prod' && secrets.AIO_FASTLY_PROD_URL || secrets.AIO_FASTLY_DEV_URL }}
           PATH_PREFIX: ${{ needs.set-state.outputs.path_prefix }}
         run: |
           echo "================================================"
@@ -519,7 +522,7 @@ jobs:
         uses: AdobeDocs/adp-devsite-fastly-purge@main
         with:
           fastly-token: ${{ secrets.AIO_FASTLY_TOKEN }}
-          fastly-url: "${{ needs.set-state.outputs.deploy_prod == 'true' && secrets.AIO_FASTLY_PROD_URL || secrets.AIO_FASTLY_DEV_URL }}${{ needs.set-state.outputs.path_prefix }}"
+          fastly-url: "${{ matrix.env == 'prod' && secrets.AIO_FASTLY_PROD_URL || secrets.AIO_FASTLY_DEV_URL }}${{ needs.set-state.outputs.path_prefix }}"
 
       - name: Cache purge complete
         run: |
