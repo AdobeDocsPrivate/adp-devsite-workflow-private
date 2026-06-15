@@ -34,7 +34,7 @@ jobs:
       - name: Checkout adp-devsite-workflow for runner matrix
         uses: actions/checkout@v6
         with:
-          repository: AdobeDocs/adp-devsite-workflow
+          repository: AdobeDocsPrivate/adp-devsite-workflow-private
           path: _workflow-config
 
       - name: Set Matrix
