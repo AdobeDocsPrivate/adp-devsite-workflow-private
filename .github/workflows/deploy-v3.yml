@@ -4,7 +4,6 @@ on:
   workflow_call:
     inputs:
       env:
-        description: "Deploy to (stage|prod)"
         required: true
         type: string
 
