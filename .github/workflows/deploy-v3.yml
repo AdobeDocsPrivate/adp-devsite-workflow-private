@@ -6,7 +6,6 @@ on:
       env:
         description: "Deploy to (stg|prod)"
         required: true
-        default: "stg"
         type: string
 
 jobs:
