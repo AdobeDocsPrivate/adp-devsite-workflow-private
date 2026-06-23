@@ -31,7 +31,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Checkout adp-devsite-workflow for runner matrix
+      - name: Checkout adp-devsite-workflow-private for runner matrix
         uses: actions/checkout@v6
         with:
           repository: AdobeDocsPrivate/adp-devsite-workflow-private
