@@ -151,6 +151,7 @@ jobs:
         id: select_connection_string
         uses: actions/github-script@v8
         env:
+          ENV_INPUT: ${{ inputs.env }}
           AIO_AZURE_DEV_PRIVATE_CONNECTION_STRING: ${{ secrets.AIO_AZURE_DEV_PRIVATE_CONNECTION_STRING }}
           AIO_AZURE_PROD_PRIVATE_CONNECTION_STRING: ${{ secrets.AIO_AZURE_PROD_PRIVATE_CONNECTION_STRING }}
         with:
@@ -160,7 +161,7 @@ jobs:
             console.log('SELECTING AZURE CONNECTION STRING');
             console.log('================================================');
 
-            const isProd = '${{ inputs.env }}' === 'prod';
+            const isProd = process.env.ENV_INPUT === 'prod';
             console.log(`Environment: ${isProd ? 'Production' : 'Staging'}`);
 
             const connectionString = isProd
