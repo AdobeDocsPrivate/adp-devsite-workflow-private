@@ -431,7 +431,7 @@ jobs:
             done
           fi
 
-      - name: Add security headers
+      - name: Add security headers and set charset
         run: |
           cd _site
           
@@ -450,8 +450,11 @@ jobs:
           # Referrer-Policy for privacy
           RP_TAG="<meta name=\"referrer\" content=\"strict-origin-when-cross-origin\">"
           
+          # Charset declaration (must come first in <head>)
+          CHARSET_TAG="<meta charset=\"utf-8\">"
+
           # Combine security meta tags
-          SECURITY_TAGS="${CSP_TAG}${XCTO_TAG}${RP_TAG}"
+          SECURITY_TAGS="${CHARSET_TAG}${CSP_TAG}${XCTO_TAG}${RP_TAG}"
           
           # Inject security headers into all HTML files (after <head>)
           # Include both *.html and extensionless page files
