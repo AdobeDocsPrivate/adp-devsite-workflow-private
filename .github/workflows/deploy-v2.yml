@@ -80,7 +80,7 @@ jobs:
           echo "================================================"
           
           # Extract pathPrefix from config.md
-          path_prefix=$(grep -A 1 "^- pathPrefix:" src/pages/config.md | tail -n 1 | sed 's/^[[:space:]]*-[[:space:]]*//' | tr -d '/')
+          path_prefix=$(grep -A 1 "^- pathPrefix:" src/pages/config.md | tail -n 1 | sed 's/^[[:space:]]*-[[:space:]]*//' | sed 's|^/||' | sed 's|/$||')
           echo "path_prefix=/${path_prefix}" >> $GITHUB_OUTPUT
           
           echo "✓ Path prefix extracted: /${path_prefix}"
