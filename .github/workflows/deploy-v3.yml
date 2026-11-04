@@ -450,19 +450,19 @@ jobs:
           # Referrer-Policy for privacy
           RP_TAG="<meta name=\"referrer\" content=\"strict-origin-when-cross-origin\">"
           
-          # Combine security meta tags
-          SECURITY_TAGS="${CSP_TAG}${XCTO_TAG}${RP_TAG}"
+          # Charset must stay within the browser's 1024-byte prescan, so it goes first
+          SECURITY_TAGS="<meta charset=\"utf-8\">${CSP_TAG}${XCTO_TAG}${RP_TAG}"
           
           # Inject security headers into all HTML files (after <head>)
           # Include both *.html and extensionless page files
-          for htmlfile in $(find . -name "*.html" -type f) $(find "./${SITE_PATH}" -type f ! -name "*.*" 2>/dev/null); do
+          for htmlfile in $(find . -type f \( -name "*.html" -o ! -name "*.*" \) 2>/dev/null); do
             [ -f "$htmlfile" ] || continue
             if ! grep -q "Content-Security-Policy" "$htmlfile" 2>/dev/null; then
               perl -i -pe "s|<head>|<head>${SECURITY_TAGS}|" "$htmlfile" 2>/dev/null || true
             fi
           done
           
-          SECURED=$(find "./${SITE_PATH}" \( -name "*.html" -o ! -name "*.*" \) -type f -exec grep -l "Content-Security-Policy" {} \; 2>/dev/null | wc -l | tr -d ' ')
+          SECURED=$(find . \( -name "*.html" -o ! -name "*.*" \) -type f -exec grep -l "Content-Security-Policy" {} \; 2>/dev/null | wc -l | tr -d ' ')
           echo "✓ Security headers added to $SECURED files"
 
       - name: Stop servers
