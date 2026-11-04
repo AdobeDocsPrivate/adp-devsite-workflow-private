@@ -450,8 +450,8 @@ jobs:
           # Referrer-Policy for privacy
           RP_TAG="<meta name=\"referrer\" content=\"strict-origin-when-cross-origin\">"
           
-          # Combine security meta tags
-          SECURITY_TAGS="${CSP_TAG}${XCTO_TAG}${RP_TAG}"
+          # Charset must stay within the browser's 1024-byte prescan, so it goes first
+          SECURITY_TAGS="<meta charset=\"utf-8\">${CSP_TAG}${XCTO_TAG}${RP_TAG}"
           
           # Inject security headers into all HTML files (after <head>)
           # Include both *.html and extensionless page files
